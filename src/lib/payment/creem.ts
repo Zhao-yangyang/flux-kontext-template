@@ -8,27 +8,7 @@ import { formatAmountForProvider } from "./router";
 import { prisma } from '@/lib/database';
 import { getUuid } from '@/lib/utils/hash';
 
-// 🎯 CREEM Product ID Mapping Configuration - 与后台产品名称完全匹配
-export const CREEM_PRODUCT_IDS = {
-  // Subscription Plans - 与CREEM后台产品名称完全匹配
-  subscriptions: {
-    plus: {
-      monthly: "FluxKontext-Plus-Monthly",  // $9.90/month
-      yearly: "FluxKontext-Plus-Yearly"    // $99.00/year
-    },
-    pro: {
-      monthly: "FluxKontext-Pro-Monthly",  // $29.90/month
-      yearly: "FluxKontext-Pro-Yearly"     // $299.00/year
-    }
-    // Note: Basic plan is free and doesn't need CREEM product IDs
-  },
-  // Credit Packs - 与CREEM后台产品名称完全匹配
-  creditPacks: {
-    starter: "Starter Pack",    // $4.90
-    creator: "Creator Pack",    // $15.00
-    business: "Business Pack"   // $60.00
-  }
-} as const;
+import { ProductConfigService } from '@/lib/config/products';
 
 // 🔥 根据产品类型获取CREEM产品ID
 export function getCreemProductId(
@@ -36,15 +16,25 @@ export function getCreemProductId(
   productId: string, 
   billingCycle?: 'monthly' | 'yearly'
 ): string {
-  if (productType === 'subscription' && billingCycle) {
-    const subscriptionMap = CREEM_PRODUCT_IDS.subscriptions[productId as keyof typeof CREEM_PRODUCT_IDS.subscriptions];
-    return subscriptionMap?.[billingCycle] || productId;
+  console.log('🔍 获取Creem产品ID:', { productType, productId, billingCycle })
+  
+  // 🔧 如果productId已经是Creem产品ID格式（以prod_开头），直接返回
+  if (productId.startsWith('prod_')) {
+    console.log('✅ 已是Creem产品ID格式:', productId)
+    return productId;
   }
   
-  if (productType === 'creditPack') {
-    return CREEM_PRODUCT_IDS.creditPacks[productId as keyof typeof CREEM_PRODUCT_IDS.creditPacks] || productId;
+  // 🔧 使用新的产品配置服务进行映射
+  const internalId = ProductConfigService.mapLegacyProductToInternal(productType, productId, billingCycle)
+  if (internalId) {
+    const creemProductId = ProductConfigService.getProviderProductId(internalId, 'creem')
+    if (creemProductId) {
+      console.log('✅ 通过配置服务映射成功:', { internalId, creemProductId })
+      return creemProductId
+    }
   }
   
+  console.warn('⚠️ 无法映射产品ID:', { productType, productId, billingCycle })
   return productId;
 }
 
@@ -223,18 +213,35 @@ export async function handleCreemWebhook(
         error: "CREEM Webhook secret not configured"
       };
     }
-    
+
+    // 🔧 根据CREEM文档，使用HMAC-SHA256生成hex格式签名
     const expectedSignature = crypto
       .createHmac("sha256", CREEM_WEBHOOK_SECRET)
       .update(body)
       .digest("hex");
 
+    console.log('🔐 CREEM签名验证:', {
+      receivedSignature: signature,
+      expectedSignature: expectedSignature,
+      bodyLength: body.length,
+      secretConfigured: !!CREEM_WEBHOOK_SECRET
+    });
+
+    // 🔧 直接比较hex格式的签名
     if (signature !== expectedSignature) {
+      console.error('❌ CREEM签名验证失败:', {
+        received: signature,
+        expected: expectedSignature,
+        bodyPreview: body.substring(0, 100) + '...'
+      });
+      
       return {
         success: false,
         error: "Invalid Webhook signature"
       };
     }
+
+    console.log('✅ CREEM签名验证成功');
 
     const event: CreemWebhookEvent = JSON.parse(body);
     console.log(`Received CREEM Webhook event: ${event.type}`);
@@ -392,7 +399,7 @@ async function handleCheckoutCompleted(data: CreemWebhookEvent["data"]) {
 
     console.log('✅ Order integrity verification passed')
 
-    // 🔄 更新支付订单状态
+    // �� 更新支付订单状态
     await prisma.paymentOrder.update({
       where: { id: paymentOrder.id },
       data: {

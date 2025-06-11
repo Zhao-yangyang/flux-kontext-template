@@ -33,8 +33,8 @@
       "monthlyPrice": 9.90,
       "yearlyPrice": 99,
       "creemProductIds": {
-        "monthly": "FluxKontext-Plus-Monthly",
-        "yearly": "FluxKontext-Plus-Yearly"
+        "monthly": "plus_monthly",
+        "yearly": "plus_yearly"
       },
       "features": [
         "1900 credits per month",
@@ -55,8 +55,8 @@
       "monthlyPrice": 29.90,
       "yearlyPrice": 299,
       "creemProductIds": {
-        "monthly": "FluxKontext-Pro-Monthly",
-        "yearly": "FluxKontext-Pro-Yearly"
+        "monthly": "pro_monthly",
+        "yearly": "pro_yearly"
       },
       "features": [
         "8900 credits per month",
@@ -77,7 +77,7 @@
       "description": "Great for occasional use",
       "credits": 600,
       "price": 4.90,
-      "creemProductId": "Starter Pack",
+      "creemProductId": "starter_pack",
       "features": ["Never expires"],
       "buttonText": "Purchase"
     },
@@ -87,7 +87,7 @@
       "description": "Ideal for professional creators",
       "credits": 4000,
       "price": 15.00,
-      "creemProductId": "Creator Pack",
+      "creemProductId": "creator_pack",
       "features": ["Never expires"],
       "isPopular": true,
       "buttonText": "Purchase"
@@ -98,7 +98,7 @@
       "description": "Best value for businesses & heavy users",
       "credits": 18000,
       "price": 60.00,
-      "creemProductId": "Business Pack",
+      "creemProductId": "business_pack",
       "features": ["Never expires"],
       "buttonText": "Purchase"
     }

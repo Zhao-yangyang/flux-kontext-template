@@ -75,4 +75,29 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+// 🔍 支持GET请求用于验证端点状态
+export async function GET() {
+  const config = {
+    hasPublicKey: !!(process.env.STRIPE_PUBLIC_KEY),
+    hasPrivateKey: !!(process.env.STRIPE_PRIVATE_KEY),
+    hasWebhookSecret: !!(process.env.STRIPE_WEBHOOK_SECRET),
+    isEnabled: isStripeAvailable()
+  }
+
+  return NextResponse.json({
+    message: 'Stripe Webhook端点正常运行',
+    endpoint: '/api/webhooks/stripe',
+    provider: 'stripe',
+    timestamp: new Date().toISOString(),
+    configuration: {
+      ...config,
+      // 不暴露敏感信息
+      publicKey: config.hasPublicKey ? '已配置' : '未配置',
+      privateKey: config.hasPrivateKey ? '已配置' : '未配置',
+      webhookSecret: config.hasWebhookSecret ? '已配置' : '未配置'
+    },
+    status: config.isEnabled ? 'ready' : 'configuration_incomplete'
+  })
 } 

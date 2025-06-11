@@ -3,76 +3,66 @@ import crypto from 'crypto'
 
 // 🔒 标准价格表 - 服务器端权威价格源
 export const STANDARD_PRICING = {
-  // 💳 订阅计划价格
+  // 💳 订阅计划价格 (支持分离的产品ID)
   subscriptions: {
-    'basic': {
-      monthly: { price: 0, credits: 10, currency: 'USD' },
-      yearly: { price: 0, credits: 120, currency: 'USD' }
-    },
-    'plus': {
-      monthly: { price: 9.90, credits: 1900, currency: 'USD' },
-      yearly: { price: 99, credits: 24000, currency: 'USD' }
-    },
-    'pro': {
-      monthly: { price: 29.90, credits: 8900, currency: 'USD' },
-      yearly: { price: 299, credits: 120000, currency: 'USD' }
-    }
+    // 基础计划
+    'basic_monthly': { price: 0, credits: 10, currency: 'USD' },
+    'basic_yearly': { price: 0, credits: 120, currency: 'USD' },
+    
+    // Plus计划
+    'plus_monthly': { price: 9.90, credits: 1900, currency: 'USD' },
+    'plus_yearly': { price: 99, credits: 24000, currency: 'USD' },
+    
+    // Pro计划
+    'pro_monthly': { price: 29.90, credits: 8900, currency: 'USD' },
+    'pro_yearly': { price: 299, credits: 120000, currency: 'USD' }
   },
   
   // 💰 积分包价格
   creditPacks: {
-    'starter': { price: 4.90, credits: 600, currency: 'USD' },
-    'creator': { price: 15.00, credits: 4000, currency: 'USD' },
-    'business': { price: 60.00, credits: 18000, currency: 'USD' }
+    'starter_pack': { price: 4.90, credits: 600, currency: 'USD' },
+    'creator_pack': { price: 15.00, credits: 4000, currency: 'USD' },
+    'business_pack': { price: 60.00, credits: 18000, currency: 'USD' }
   }
 } as const
 
-// 🔧 CREEM产品ID到内部产品ID的映射
-export const CREEM_TO_INTERNAL_MAPPING = {
-  // 订阅计划映射
-  subscriptions: {
-    'FluxKontext-Plus-Monthly': { internalId: 'plus', billingCycle: 'monthly' },
-    'FluxKontext-Plus-Yearly': { internalId: 'plus', billingCycle: 'yearly' },
-    'FluxKontext-Pro-Monthly': { internalId: 'pro', billingCycle: 'monthly' },
-    'FluxKontext-Pro-Yearly': { internalId: 'pro', billingCycle: 'yearly' }
-  },
-  
-  // 积分包映射
-  creditPacks: {
-    'Starter Pack': 'starter',
-    'Creator Pack': 'creator', 
-    'Business Pack': 'business'
-  }
-} as const
+import { ProductConfigService } from '@/lib/config/products'
 
 // 🔍 将CREEM产品ID转换为内部产品ID
 export function mapCreemProductIdToInternal(productType: 'subscription' | 'creditPack', productId: string, billingCycle?: string): {
   internalProductId: string
   internalBillingCycle?: 'monthly' | 'yearly'
 } {
-  if (productType === 'subscription') {
-    const mapping = CREEM_TO_INTERNAL_MAPPING.subscriptions[productId as keyof typeof CREEM_TO_INTERNAL_MAPPING.subscriptions]
-    if (mapping) {
+  console.log('🔍 映射产品ID到内部ID:', { productType, productId, billingCycle })
+  
+  // 🔧 使用新的产品配置服务进行映射
+  const product = ProductConfigService.getProductByProviderId('creem', productId)
+  if (product) {
+    console.log('✅ 通过Creem产品ID找到配置:', product)
+    return {
+      internalProductId: product.internal_id,
+      internalBillingCycle: product.billing_cycle === 'one_time' ? undefined : product.billing_cycle
+    }
+  }
+  
+  // 🔧 尝试通过legacy映射
+  const internalId = ProductConfigService.mapLegacyProductToInternal(productType, productId, billingCycle)
+  if (internalId) {
+    const productConfig = ProductConfigService.getProductByInternalId(internalId)
+    if (productConfig) {
+      console.log('✅ 通过legacy映射找到配置:', productConfig)
       return {
-        internalProductId: mapping.internalId,
-        internalBillingCycle: mapping.billingCycle
+        internalProductId: internalId,
+        internalBillingCycle: productConfig.billing_cycle === 'one_time' ? undefined : productConfig.billing_cycle
       }
     }
-    // 如果没有找到映射，假设传入的就是内部ID
-    return {
-      internalProductId: productId,
-      internalBillingCycle: billingCycle as 'monthly' | 'yearly'
-    }
   }
   
-  if (productType === 'creditPack') {
-    const internalId = CREEM_TO_INTERNAL_MAPPING.creditPacks[productId as keyof typeof CREEM_TO_INTERNAL_MAPPING.creditPacks]
-    return {
-      internalProductId: internalId || productId
-    }
+  console.warn('⚠️ 无法映射产品ID，使用原始ID:', productId)
+  return { 
+    internalProductId: productId,
+    internalBillingCycle: billingCycle as 'monthly' | 'yearly'
   }
-  
-  return { internalProductId: productId }
 }
 
 // 🔍 价格验证接口
@@ -125,6 +115,7 @@ export async function validatePrice(request: PriceValidationRequest): Promise<Pr
     let credits: number
 
     if (productType === 'subscription') {
+      // 🔧 新的订阅计划验证逻辑 - 直接使用完整的产品ID
       const plan = STANDARD_PRICING.subscriptions[internalProductId as keyof typeof STANDARD_PRICING.subscriptions]
       if (!plan) {
         return {
@@ -137,20 +128,8 @@ export async function validatePrice(request: PriceValidationRequest): Promise<Pr
         }
       }
 
-      if (!internalBillingCycle || !plan[internalBillingCycle as keyof typeof plan]) {
-        return {
-          isValid: false,
-          expectedPrice: 0,
-          actualPrice: amount,
-          credits: 0,
-          error: `Invalid billing cycle: ${internalBillingCycle} (original: ${billingCycle})`,
-          validationHash: ''
-        }
-      }
-
-      const planDetails = plan[internalBillingCycle as keyof typeof plan]
-      expectedPrice = planDetails.price
-      credits = planDetails.credits
+      expectedPrice = plan.price
+      credits = plan.credits
     } else if (productType === 'creditPack') {
       const pack = STANDARD_PRICING.creditPacks[internalProductId as keyof typeof STANDARD_PRICING.creditPacks]
       if (!pack) {
