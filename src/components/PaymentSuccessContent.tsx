@@ -1,10 +1,13 @@
 "use client"
 
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { CheckCircle, Home, CreditCard, ArrowRight } from 'lucide-react'
+import Link from 'next/link'
 
 export function PaymentSuccessContent() {
   const searchParams = useSearchParams()
+  const [currentTime, setCurrentTime] = useState<string>('')
   
   // 🔍 获取支付参数
   const checkoutId = searchParams.get('checkout_id')
@@ -15,6 +18,11 @@ export function PaymentSuccessContent() {
   const isCreemPayment = checkoutId || orderId
   const isStripePayment = sessionId
   const paymentProvider = isCreemPayment ? 'Creem' : isStripePayment ? 'Stripe' : 'Unknown'
+
+  // 🕒 客户端时间设置，避免hydration错误
+  useEffect(() => {
+    setCurrentTime(new Date().toLocaleString())
+  }, [])
 
   return (
     <div className="max-w-2xl mx-auto text-center space-y-8">
@@ -64,7 +72,9 @@ export function PaymentSuccessContent() {
           
           <div className="flex justify-between">
             <span className="text-gray-500">Processed At:</span>
-            <span className="text-xs">{new Date().toLocaleString()}</span>
+            <span className="text-xs" suppressHydrationWarning>
+              {currentTime || 'Loading...'}
+            </span>
           </div>
         </div>
       </div>
@@ -78,38 +88,38 @@ export function PaymentSuccessContent() {
         
         {/* 主要按钮 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <a 
+          <Link 
             href="/dashboard" 
             className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors duration-200 text-center"
           >
             <CreditCard className="h-5 w-5" />
             View Dashboard
-          </a>
-          <a 
+          </Link>
+          <Link 
             href="/generate" 
             className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-purple-300 text-purple-700 font-medium rounded-lg hover:bg-purple-50 transition-colors duration-200 text-center"
           >
             <ArrowRight className="h-5 w-5" />
             Start Generating
-          </a>
+          </Link>
         </div>
         
         {/* 次要按钮 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
-          <a 
+          <Link 
             href="/" 
             className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors duration-200 text-center"
           >
             <Home className="h-4 w-4" />
             Back to Home
-          </a>
-          <a 
+          </Link>
+          <Link 
             href="/pricing" 
             className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors duration-200 text-center"
           >
             <CreditCard className="h-4 w-4" />
             View Pricing
-          </a>
+          </Link>
         </div>
       </div>
 
