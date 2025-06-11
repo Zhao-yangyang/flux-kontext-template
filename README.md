@@ -146,6 +146,15 @@ ProductConfigService.getProviderProductId('starter_pack', 'creem') // 动态查�
   - 🎯 **多平台兼容**：支持CREEM和Stripe两种支付平台的参数解析
 - **测试结果**：✅ 3/3 测试场景全部通过，用户体验完整流畅
 
+**🔧 Next.js链接规范修复 (2025-01-11)**
+- **问题**：PaymentSuccessContent组件中使用`<a>`标签导航内部页面违反了Next.js linting规则
+- **解决方案**：
+  - 🔗 **内部链接**：将所有内部导航(`/dashboard`, `/generate`, `/`, `/pricing`)改为使用`<Link>`组件
+  - 📧 **外部链接**：保留邮箱链接(`mailto:`)使用`<a>`标签
+  - ✅ **符合规范**：遵循Next.js最佳实践和linting规则
+  - 🎯 **功能保持**：所有按钮和链接功能完全正常
+- **测试结果**：✅ 所有按钮正常显示和工作，linter错误已解决
+
 ---
 
 ## 📁 项目文件结构详解
