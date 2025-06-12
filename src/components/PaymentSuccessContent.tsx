@@ -7,8 +7,6 @@ import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Navigation } from '@/components/Navigation'
-import { Footer } from '@/components/Footer'
 
 interface PaymentDetails {
   request_id?: string
@@ -58,23 +56,19 @@ export function PaymentSuccessContent() {
   if (isLoading) {
     return (
       <div className="h-screen w-full bg-background overflow-auto">
-        <Navigation />
-        <main className="w-full px-0 pt-20 pb-8">
-          <div className="flex items-center justify-center min-h-[400px]">
+        <main className="w-full px-0 pt-8 pb-8">
+          <div className="w-full flex items-center justify-center min-h-[400px]">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
         </main>
-        <Footer />
       </div>
     )
   }
 
   return (
     <div className="h-screen w-full bg-background overflow-auto">
-      <Navigation />
-      
-      <main className="w-full px-0 pt-20 pb-8">
-        <div className="max-w-4xl mx-auto px-4 space-y-8">
+      <main className="w-full px-0 pt-8 pb-8">
+        <div className="w-full px-6 md:px-8 lg:px-12 space-y-8">
           {/* 🎉 成功标题区域 */}
           <div className="text-center space-y-6">
             <div className="flex justify-center">
@@ -92,7 +86,7 @@ export function PaymentSuccessContent() {
               <h1 className="text-4xl md:text-5xl font-bold text-foreground">
                 Payment Successful!
               </h1>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              <p className="text-xl text-muted-foreground">
                 Thank you for your purchase. Your payment has been processed successfully and your credits are now available.
               </p>
             </div>
@@ -257,8 +251,6 @@ export function PaymentSuccessContent() {
           </Card>
         </div>
       </main>
-
-      <Footer />
     </div>
   )
 } 
