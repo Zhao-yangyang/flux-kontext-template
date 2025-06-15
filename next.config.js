@@ -1,3 +1,4 @@
+const { withPayload } = require("@payloadcms/next/withPayload");
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // 开发环境跨域配置 - 支持局域网访问
@@ -95,4 +96,4 @@ const nextConfig = {
   compress: true,
 };
 
-module.exports = nextConfig;
+module.exports = withPayload(nextConfig);
